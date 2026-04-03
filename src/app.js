@@ -8,4 +8,7 @@ app.get("/", (req, res) => {
 app.use("/api/test", require("./routes/testRoutes"));
 app.use("/api/auth", require("./routes/authRoute"));
 app.use("/api/records", require("./routes/recordRoute"));
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 module.exports = app;
