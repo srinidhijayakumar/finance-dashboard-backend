@@ -7,4 +7,5 @@ app.get("/", (req, res) => {
 });
 app.use("/api/test", require("./routes/testRoutes"));
 app.use("/api/auth", require("./routes/authRoute"));
+app.use("/api/records", require("./routes/recordRoute"));
 module.exports = app;
