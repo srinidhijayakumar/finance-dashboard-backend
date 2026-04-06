@@ -130,3 +130,114 @@ exports.getRecords = async (req, res) => {
         };
       }
   };
+  exports.getMonthlyTrends = async (req, res) => {
+    try {
+      const data = await Record.aggregate([
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(req.user.id),
+          },
+        },
+        {
+          $group: {
+            _id: { $month: "$createdAt" },
+            totalIncome: {
+              $sum: {
+                $cond: [{ $eq: ["$type", "income"] }, "$amount", 0],
+              },
+            },
+            totalExpense: {
+              $sum: {
+                $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0],
+              },
+            },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+  
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+  exports.getRecentActivity = async (req, res) => {
+    try {
+      const records = await Record.find({ user: req.user.id })
+        .sort({ createdAt: -1 })
+        .limit(5);
+  
+      res.json(records);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+  exports.getDashboard = async (req, res) => {
+    try {
+      const userId = new mongoose.Types.ObjectId(req.user.id);
+  
+      // 🔹 Fetch all records for calculations
+      const records = await Record.find({ user: userId });
+  
+      // 🔹 Totals
+      let totalIncome = 0;
+      let totalExpense = 0;
+  
+      records.forEach((r) => {
+        if (r.type === "income") totalIncome += r.amount;
+        if (r.type === "expense") totalExpense += r.amount;
+      });
+  
+      // 🔹 Category breakdown
+      const categoryData = await Record.aggregate([
+        { $match: { user: userId } },
+        {
+          $group: {
+            _id: "$category",
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+      ]);
+  
+      // 🔹 Monthly trends
+      const trends = await Record.aggregate([
+        { $match: { user: userId } },
+        {
+          $group: {
+            _id: { $month: "$createdAt" },
+            income: {
+              $sum: {
+                $cond: [{ $eq: ["$type", "income"] }, "$amount", 0],
+              },
+            },
+            expense: {
+              $sum: {
+                $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0],
+              },
+            },
+          },
+        },
+        { $sort: { "_id": 1 } },
+      ]);
+  
+      // 🔹 Recent activity
+      const recent = await Record.find({ user: userId })
+        .sort({ createdAt: -1 })
+        .limit(5);
+  
+      // 🔥 FINAL RESPONSE
+      res.json({
+        summary: {
+          totalIncome,
+          totalExpense,
+          netBalance: totalIncome - totalExpense,
+        },
+        categoryBreakdown: categoryData,
+        trends,
+        recentActivity: recent,
+      });
+  
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
