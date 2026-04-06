@@ -24,7 +24,7 @@ A role-based finance dashboard backend built with **Node.js**, **Express**, **Mo
 
 ---
 
-## 👥 Role Permissions
+##  Role Permissions
 
 | Action | Viewer | Analyst | Admin |
 |--------|:------:|:-------:|:-----:|
